@@ -1,0 +1,21 @@
+{
+  "name": "Replace-Color",
+  "version": "1.0.0",
+  "description": "Your Figma Plugin",
+  "main": "code.js",
+  "scripts": {
+    "build": "tsc -noEmit && esbuild code.ts --bundle --outfile=code.js",
+    "watch": "npm run build -- --watch"
+  },
+  "author": "",
+  "license": "",
+  "devDependencies": {
+    "@figma/plugin-typings": "*",
+    "typescript": "*"
+  },
+  "dependencies": {
+    "colorsea": "^1.2.1",
+    "esbuild": "0.19.3",
+    "rgb-hex": "^4.1.0"
+  }
+}

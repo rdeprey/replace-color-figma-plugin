@@ -1,0 +1,98 @@
+<style>
+  .container {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .container p {
+    margin-bottom: 0;
+  }
+
+  button {
+    background: none;
+    border: none;
+    width: 100px;
+    height: auto;
+    font-size: 1rem;
+    padding: 2px;
+    display: block;
+    text-align: left;
+    margin: 0.25rem 0;
+  }
+
+  button[aria-checked='true'] {
+    border: 1px solid blue;
+  }
+</style>
+
+<p>To start, select an item on the canvas.</p>
+
+<script>
+  onmessage = (event) => {
+    console.log('got this from the plugin code', event.data.pluginMessage);
+
+    if (event.data.pluginMessage) {
+      const bodyElem = document.getElementsByTagName('body')[0];
+
+      // Clear current content
+      while (bodyElem.firstChild) {
+        bodyElem.removeChild(bodyElem.firstChild);
+      }
+
+      const paragraph = document.createElement('p');
+      paragraph.innerText = 'Select a color to replace:';
+
+      bodyElem.appendChild(paragraph);
+
+      if (event.data.pluginMessage.fills.length > 0) {
+        const container = document.createElement('div');
+        container.classList.add('container');
+
+        const subHeader = document.createElement('p');
+        subHeader.innerText = 'Fills:';
+        container.appendChild(subHeader);
+
+        event.data.pluginMessage.fills.forEach((fill, index) => {
+          const button = document.createElement('button');
+          button.setAttribute('aria-checked', index === 0 ? true : false);
+
+          const divRect = document.createElement('div');
+          divRect.setAttribute(
+            'style',
+            `background-color: ${fill}; width: 10px; height: 10px; display: inline-block;`
+          );
+
+          button.appendChild(divRect);
+          button.appendChild(document.createTextNode(` ${fill}`));
+
+          button.addEventListener('click', () => {
+            button.setAttribute('aria-checked', true);
+
+            parent.postMessage(
+              {
+                pluginMessage: {
+                  type: 'replace-color',
+                  color: fill
+                }
+              },
+              '*'
+            );
+          });
+
+          container.appendChild(button);
+        });
+
+        bodyElem.appendChild(container);
+      }
+
+      //   if (event.data.pluginMessage.strokes.length > 0) {
+      //     event.data.pluginMessage.strokes.forEach((stroke) => {
+      //       const option = document.createElement('option');
+      //       option.setAttribute('value', stroke.color);
+      //       option.innerText = stroke.color;
+      //       select.appendChild(option);
+      //     });
+      //   }
+    }
+  };
+</script>
