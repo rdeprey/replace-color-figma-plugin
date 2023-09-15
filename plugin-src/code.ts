@@ -87,6 +87,7 @@ if (figma.editorType === 'figma') {
   figma.showUI(__html__);
 
   figma.on('selectionchange', () => {
+    console.log('selected changed');
     // TODO: Handle more shapes and types
     if (
       figma.currentPage.selection.length >= 1 &&

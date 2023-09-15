@@ -4,7 +4,6 @@
     "lib": ["es6"],
     "strict": true,
     "moduleResolution": "node",
-    "typeRoots": ["./node_modules/@types", "./node_modules/@figma"],
-    "skipLibCheck": true
+    "typeRoots": ["../node_modules/@figma"]
   }
 }

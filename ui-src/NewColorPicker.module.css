@@ -1,0 +1,11 @@
+.newColorPicker {
+  display: flex;
+  flex-direction: column;
+}
+
+.newColorPicker input {
+  height: 38px;
+  margin: 0.25rem 0.25rem 0.75rem 0;
+  background-color: #ffffff;
+  padding: 0.25rem;
+}
