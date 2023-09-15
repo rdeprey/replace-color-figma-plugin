@@ -28,6 +28,8 @@
 <p>To start, select an item on the canvas.</p>
 
 <script>
+  let selectedColor = null;
+
   onmessage = (event) => {
     console.log('got this from the plugin code', event.data.pluginMessage);
 
@@ -56,6 +58,10 @@
           const button = document.createElement('button');
           button.setAttribute('aria-checked', index === 0 ? true : false);
 
+          if (index === 0) {
+            selectedColor = fill;
+          }
+
           const divRect = document.createElement('div');
           divRect.setAttribute(
             'style',
@@ -67,16 +73,7 @@
 
           button.addEventListener('click', () => {
             button.setAttribute('aria-checked', true);
-
-            parent.postMessage(
-              {
-                pluginMessage: {
-                  type: 'replace-color',
-                  color: fill
-                }
-              },
-              '*'
-            );
+            selectedColor = fill;
           });
 
           container.appendChild(button);
@@ -93,6 +90,40 @@
       //       select.appendChild(option);
       //     });
       //   }
+
+      const newColorLabel = document.createElement('label');
+      newColorLabel.setAttribute('for', 'new-color');
+      newColorLabel.innerText = 'New color:';
+
+      const newColorInput = document.createElement('input');
+      newColorInput.setAttribute('type', 'color');
+      newColorInput.setAttribute('id', 'new-color');
+      newColorInput.setAttribute('name', 'new-color');
+      newColorInput.setAttribute('value', '#000000');
+
+      const newColorContainer = document.createElement('div');
+      newColorContainer.appendChild(newColorLabel);
+      newColorContainer.appendChild(newColorInput);
+      bodyElem.appendChild(newColorContainer);
+
+      const replaceButton = document.createElement('button');
+      replaceButton.innerText = 'Replace';
+      replaceButton.addEventListener('click', () => {
+        const newColor = newColorInput.value;
+
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: 'replace-color',
+              colorToReplace: selectedColor,
+              newColor: newColor
+            }
+          },
+          '*'
+        );
+      });
+
+      bodyElem.appendChild(replaceButton);
     }
   };
 </script>

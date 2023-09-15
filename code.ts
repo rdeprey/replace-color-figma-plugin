@@ -28,8 +28,7 @@ function clone(val: any): { [key: string]: any } | null {
 }
 
 const replaceColor = (color: string, newColor: string) => {
-  console.log('in replace color function');
-  const rgbNewColor = colorsea(`${newColor}`).rgb();
+  const rgbCurrentColor = colorsea(`${color}`).rgb();
 
   const nodes = figma.currentPage.findAll((node: SceneNode) => {
     if (node.type === 'RECTANGLE') {
@@ -45,8 +44,6 @@ const replaceColor = (color: string, newColor: string) => {
     return false;
   });
 
-  console.log('nodes: ', nodes);
-
   if (nodes.length === 0) {
     return;
   }
@@ -55,33 +52,25 @@ const replaceColor = (color: string, newColor: string) => {
     if (node.type === 'RECTANGLE') {
       const fills = clone(node.fills);
 
-      console.log('fills', fills);
-
       if (!fills) {
         return;
       }
-
-      const rgbNewColor = colorsea(`${newColor}`).rgb();
-      console.log('rgbNewColor', rgbNewColor);
 
       fills.forEach((fill: any) => {
         if (fill.type !== 'SOLID') {
           return;
         }
 
-        console.log('fill', fill);
         const rgbColor = [
-          fill.color.r * 255,
-          fill.color.g * 255,
-          fill.color.b * 255
+          Math.round(fill.color.r * 255),
+          Math.round(fill.color.g * 255),
+          Math.round(fill.color.b * 255)
         ];
 
-        console.log('rgbColor', rgbColor);
-
         if (
-          rgbColor[0] !== rgbNewColor[0] ||
-          rgbColor[1] !== rgbNewColor[1] ||
-          rgbColor[2] !== rgbNewColor[2]
+          rgbColor[0] === rgbCurrentColor[0] &&
+          rgbColor[1] === rgbCurrentColor[1] &&
+          rgbColor[2] === rgbCurrentColor[2]
         ) {
           fill.color.r = parseInt(newColor.slice(1, 3), 16) / 255;
           fill.color.g = parseInt(newColor.slice(3, 5), 16) / 255;
@@ -92,8 +81,6 @@ const replaceColor = (color: string, newColor: string) => {
       node.fills = fills as Paint[];
     }
   });
-
-  console.log('made it to resetting the selection values');
 };
 
 if (figma.editorType === 'figma') {
@@ -133,6 +120,6 @@ if (figma.editorType === 'figma') {
 
   figma.ui.onmessage = (message) => {
     console.log('got this from the UI', message);
-    replaceColor(message.color, '#00FF00');
+    replaceColor(message.colorToReplace, message.newColor);
   };
 }
