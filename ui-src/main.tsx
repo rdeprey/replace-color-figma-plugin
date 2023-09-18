@@ -5,8 +5,7 @@ import { NewColorPicker } from './NewColorPicker';
 
 const App = () => {
   const [selected, setSelected] = React.useState<null | {
-    fills: string[];
-    strokes: string[];
+    colors: string[];
   }>(null);
   const [selectedColorToChange, setSelectedColorToChange] = React.useState<
     string | undefined
@@ -16,13 +15,13 @@ const App = () => {
   console.log(!selectedColorToChange || !newColor);
 
   onmessage = (event) => {
-    setSelected(event.data.pluginMessage);
+    if (event.data.pluginMessage.type !== 'selection') {
+      setSelected(null);
+      return;
+    }
 
-    const data = [
-      ...event.data.pluginMessage.fills,
-      ...event.data.pluginMessage.strokes
-    ];
-    setSelectedColorToChange(data[0]);
+    setSelected(event.data.pluginMessage);
+    setSelectedColorToChange(event.data.pluginMessage.colors[0]);
   };
 
   const replaceColor = () => {
@@ -44,11 +43,16 @@ const App = () => {
 
   return (
     <div>
-      {!selected && <p>To start, select an item on the canvas.</p>}
+      {!selected && (
+        <p>
+          <strong>To start, select at least one item on the canvas.</strong>
+        </p>
+      )}
       {selected && (
         <>
           <ColorSelector
             selected={selected}
+            selectedColorToChange={selectedColorToChange}
             setSelectedColorToChange={setSelectedColorToChange}
           />
           <NewColorPicker setNewColor={setNewColor} />

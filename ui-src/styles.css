@@ -1,6 +1,35 @@
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  src: url(fonts/Inter/static/Inter-Regular.ttf) format('ttf');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  src: url(fonts/Inter/static/Inter-Medium.ttf) format('ttf');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  src: url(fonts/Inter/static/Inter-SemiBold.ttf) format('ttf');
+}
+
 body {
   background-color: #f0f0f0;
-  font-size: 1rem;
+  font-size: 0.75rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  line-height: 1rem;
+  letter-spacing: 0.055px;
+}
+
+strong {
+  font-weight: 600;
 }
 
 #root > div {
@@ -21,11 +50,14 @@ fieldset span {
 }
 
 button {
-  padding: 0.5rem;
+  padding: 0.4375rem 0.75rem;
   align-self: flex-end;
-  background-color: #4181e6;
+  background-color: #18a0fb;
   color: #ffffff;
   border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
 }
 
 button:disabled {

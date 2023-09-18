@@ -8,7 +8,9 @@ type NewColorPickerProps = {
 export const NewColorPicker = ({ setNewColor }: NewColorPickerProps) => {
   return (
     <div className={styles.newColorPicker}>
-      <label htmlFor='select-new-color'>Select new color:</label>
+      <label htmlFor='select-new-color'>
+        What color would you like to change it to?
+      </label>
       <input
         type='color'
         id='select-new-color'

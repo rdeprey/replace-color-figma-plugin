@@ -33,8 +33,9 @@ const replaceColor = (color: string, newColor: string) => {
   const nodes = figma.currentPage.findAll((node: SceneNode) => {
     if (node.type === 'RECTANGLE') {
       const fills = clone(node.fills);
+      const strokes = clone(node.strokes);
 
-      if (!fills) {
+      if (!fills && !strokes) {
         return false;
       }
 
@@ -51,34 +52,63 @@ const replaceColor = (color: string, newColor: string) => {
   nodes.forEach((node: SceneNode) => {
     if (node.type === 'RECTANGLE') {
       const fills = clone(node.fills);
+      const strokes = clone(node.strokes);
 
-      if (!fills) {
+      if (!fills && !strokes) {
         return;
       }
 
-      fills.forEach((fill: any) => {
-        if (fill.type !== 'SOLID') {
-          return;
-        }
+      if (fills) {
+        fills.forEach((fill: any) => {
+          if (fill.type !== 'SOLID') {
+            return;
+          }
 
-        const rgbColor = [
-          Math.round(fill.color.r * 255),
-          Math.round(fill.color.g * 255),
-          Math.round(fill.color.b * 255)
-        ];
+          const rgbColor = [
+            Math.round(fill.color.r * 255),
+            Math.round(fill.color.g * 255),
+            Math.round(fill.color.b * 255)
+          ];
 
-        if (
-          rgbColor[0] === rgbCurrentColor[0] &&
-          rgbColor[1] === rgbCurrentColor[1] &&
-          rgbColor[2] === rgbCurrentColor[2]
-        ) {
-          fill.color.r = parseInt(newColor.slice(1, 3), 16) / 255;
-          fill.color.g = parseInt(newColor.slice(3, 5), 16) / 255;
-          fill.color.b = parseInt(newColor.slice(5, 7), 16) / 255;
-        }
-      });
+          if (
+            rgbColor[0] === rgbCurrentColor[0] &&
+            rgbColor[1] === rgbCurrentColor[1] &&
+            rgbColor[2] === rgbCurrentColor[2]
+          ) {
+            fill.color.r = parseInt(newColor.slice(1, 3), 16) / 255;
+            fill.color.g = parseInt(newColor.slice(3, 5), 16) / 255;
+            fill.color.b = parseInt(newColor.slice(5, 7), 16) / 255;
+          }
+        });
 
-      node.fills = fills as Paint[];
+        node.fills = fills as Paint[];
+      }
+
+      if (strokes) {
+        strokes.forEach((stroke: any) => {
+          if (stroke.type !== 'SOLID') {
+            return;
+          }
+
+          const rgbColor = [
+            Math.round(stroke.color.r * 255),
+            Math.round(stroke.color.g * 255),
+            Math.round(stroke.color.b * 255)
+          ];
+
+          if (
+            rgbColor[0] === rgbCurrentColor[0] &&
+            rgbColor[1] === rgbCurrentColor[1] &&
+            rgbColor[2] === rgbCurrentColor[2]
+          ) {
+            stroke.color.r = parseInt(newColor.slice(1, 3), 16) / 255;
+            stroke.color.g = parseInt(newColor.slice(3, 5), 16) / 255;
+            stroke.color.b = parseInt(newColor.slice(5, 7), 16) / 255;
+          }
+        });
+
+        node.strokes = strokes as Paint[];
+      }
     }
   });
 };
@@ -87,34 +117,49 @@ if (figma.editorType === 'figma') {
   figma.showUI(__html__);
 
   figma.on('selectionchange', () => {
-    console.log('selected changed');
     // TODO: Handle more shapes and types
     if (
       figma.currentPage.selection.length >= 1 &&
       figma.currentPage.selection[0].type === 'RECTANGLE'
     ) {
       // Get the fill colors and convert them to hex
-      const fillColors: any[] = [];
+      const colors = new Set();
 
       figma.currentPage.selection.forEach((selection: any) => {
         const fills = clone(selection.fills);
-
-        if (!fills) {
-          return;
+        if (fills) {
+          fills.forEach((fill: any) => {
+            colors.add(
+              colorsea
+                .rgb(fill.color.r * 255, fill.color.g * 255, fill.color.b * 255)
+                .hex()
+            );
+          });
         }
 
-        fills.forEach((fill: any) => {
-          fillColors.push(
-            colorsea
-              .rgb(fill.color.r * 255, fill.color.g * 255, fill.color.b * 255)
-              .hex()
-          );
-        });
+        const strokes = clone(selection.strokes);
+        if (strokes) {
+          strokes.forEach((stroke: any) => {
+            colors.add(
+              colorsea
+                .rgb(
+                  stroke.color.r * 255,
+                  stroke.color.g * 255,
+                  stroke.color.b * 255
+                )
+                .hex()
+            );
+          });
+        }
       });
 
       figma.ui.postMessage({
-        fills: fillColors,
-        strokes: figma.currentPage.selection[0].strokes
+        type: 'selection',
+        colors: Array.from(colors)
+      });
+    } else {
+      figma.ui.postMessage({
+        type: 'deselection'
       });
     }
   });
