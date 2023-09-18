@@ -1,16 +1,16 @@
 import * as React from 'react';
-import { Select } from './Select/Select';
+import { ColorPanel } from './ColorPanel/ColorPanel';
 
 type ColorSelectorProps = {
   selected: null | { colors: string[] };
-  selectedColorToChange: string | undefined;
-  setSelectedColorToChange: (color: string) => void;
+  selectedColorsToChange: string[];
+  setSelectedColorsToChange: (color: string) => void;
 };
 
 export const ColorSelector = ({
   selected,
-  selectedColorToChange,
-  setSelectedColorToChange
+  selectedColorsToChange,
+  setSelectedColorsToChange
 }: ColorSelectorProps) => {
   if (!selected || !selected.colors) {
     return null;
@@ -18,11 +18,11 @@ export const ColorSelector = ({
 
   return (
     <div className='select-container'>
-      <Select
+      <ColorPanel
         options={selected.colors}
-        value={selectedColorToChange ?? ''}
-        onChange={setSelectedColorToChange}
-        label='Select a color to change: '
+        value={selectedColorsToChange ?? ''}
+        onChange={setSelectedColorsToChange}
+        label='Select color(s) to change: '
       />
     </div>
   );

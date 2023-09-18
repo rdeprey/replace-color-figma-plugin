@@ -1,5 +1,74 @@
 import colorsea from 'colorsea';
 
+const canHaveFill = (
+  node: SceneNode
+): node is
+  | RectangleNode
+  | FrameNode
+  | BooleanOperationNode
+  | VectorNode
+  | StarNode
+  | LineNode
+  | EllipseNode
+  | PolygonNode
+  | TextNode
+  | StickyNode
+  | ShapeWithTextNode
+  | StampNode
+  | SectionNode
+  | HighlightNode
+  | WashiTapeNode
+  | TableNode => {
+  if (
+    node.type !== 'SLICE' &&
+    node.type !== 'GROUP' &&
+    node.type !== 'CONNECTOR' &&
+    node.type !== 'CODE_BLOCK' &&
+    node.type !== 'WIDGET' &&
+    node.type !== 'INSTANCE' &&
+    node.type !== 'COMPONENT' &&
+    node.type !== 'COMPONENT_SET' &&
+    node.type !== 'EMBED' &&
+    node.type !== 'LINK_UNFURL' &&
+    node.type !== 'MEDIA'
+  ) {
+    return true;
+  }
+
+  return false;
+};
+
+const canHaveStroke = (
+  node: SceneNode
+): node is
+  | RectangleNode
+  | FrameNode
+  | BooleanOperationNode
+  | VectorNode
+  | StarNode
+  | LineNode
+  | EllipseNode
+  | PolygonNode
+  | TextNode
+  | ShapeWithTextNode
+  | StampNode
+  | HighlightNode
+  | WashiTapeNode => {
+  if (!canHaveFill(node)) {
+    return false;
+  }
+
+  if (
+    node.type !== 'STICKY' &&
+    node.type !== 'SECTION' &&
+    node.type !== 'TABLE'
+  ) {
+    return true;
+  }
+
+  return false;
+};
+
 function clone(val: any): { [key: string]: any } | null {
   const type = typeof val;
   if (val === null) {
@@ -27,89 +96,81 @@ function clone(val: any): { [key: string]: any } | null {
   throw 'unknown';
 }
 
-const replaceColor = (color: string, newColor: string) => {
-  const rgbCurrentColor = colorsea(`${color}`).rgb();
+const replaceColor = (colors: string[], newColor: string) => {
+  colors.forEach((color) => {
+    const rgbCurrentColor = colorsea(`${color}`).rgb();
 
-  const nodes = figma.currentPage.findAll((node: SceneNode) => {
-    if (node.type === 'RECTANGLE') {
-      const fills = clone(node.fills);
-      const strokes = clone(node.strokes);
+    let updatedNodes = 0;
+    figma.currentPage.children.forEach((node: SceneNode) => {
+      if (canHaveFill(node)) {
+        const fills = clone(node.fills);
 
-      if (!fills && !strokes) {
-        return false;
+        if (fills) {
+          fills.forEach((fill: any) => {
+            if (fill.type !== 'SOLID') {
+              return;
+            }
+
+            const rgbColor = [
+              Math.round(fill.color.r * 255),
+              Math.round(fill.color.g * 255),
+              Math.round(fill.color.b * 255)
+            ];
+
+            if (
+              rgbColor[0] === rgbCurrentColor[0] &&
+              rgbColor[1] === rgbCurrentColor[1] &&
+              rgbColor[2] === rgbCurrentColor[2]
+            ) {
+              fill.color.r = parseInt(newColor.slice(1, 3), 16) / 255;
+              fill.color.g = parseInt(newColor.slice(3, 5), 16) / 255;
+              fill.color.b = parseInt(newColor.slice(5, 7), 16) / 255;
+
+              updatedNodes++;
+            }
+          });
+
+          node.fills = fills as Paint[];
+        }
       }
 
-      return true;
-    }
+      if (canHaveStroke(node)) {
+        const strokes = clone(node.strokes);
 
-    return false;
-  });
+        if (strokes) {
+          strokes.forEach((stroke: any) => {
+            if (stroke.type !== 'SOLID') {
+              return;
+            }
 
-  if (nodes.length === 0) {
-    return;
-  }
+            const rgbColor = [
+              Math.round(stroke.color.r * 255),
+              Math.round(stroke.color.g * 255),
+              Math.round(stroke.color.b * 255)
+            ];
 
-  nodes.forEach((node: SceneNode) => {
-    if (node.type === 'RECTANGLE') {
-      const fills = clone(node.fills);
-      const strokes = clone(node.strokes);
+            if (
+              rgbColor[0] === rgbCurrentColor[0] &&
+              rgbColor[1] === rgbCurrentColor[1] &&
+              rgbColor[2] === rgbCurrentColor[2]
+            ) {
+              stroke.color.r = parseInt(newColor.slice(1, 3), 16) / 255;
+              stroke.color.g = parseInt(newColor.slice(3, 5), 16) / 255;
+              stroke.color.b = parseInt(newColor.slice(5, 7), 16) / 255;
 
-      if (!fills && !strokes) {
-        return;
+              updatedNodes++;
+            }
+          });
+
+          node.strokes = strokes as Paint[];
+        }
       }
+    });
 
-      if (fills) {
-        fills.forEach((fill: any) => {
-          if (fill.type !== 'SOLID') {
-            return;
-          }
-
-          const rgbColor = [
-            Math.round(fill.color.r * 255),
-            Math.round(fill.color.g * 255),
-            Math.round(fill.color.b * 255)
-          ];
-
-          if (
-            rgbColor[0] === rgbCurrentColor[0] &&
-            rgbColor[1] === rgbCurrentColor[1] &&
-            rgbColor[2] === rgbCurrentColor[2]
-          ) {
-            fill.color.r = parseInt(newColor.slice(1, 3), 16) / 255;
-            fill.color.g = parseInt(newColor.slice(3, 5), 16) / 255;
-            fill.color.b = parseInt(newColor.slice(5, 7), 16) / 255;
-          }
-        });
-
-        node.fills = fills as Paint[];
-      }
-
-      if (strokes) {
-        strokes.forEach((stroke: any) => {
-          if (stroke.type !== 'SOLID') {
-            return;
-          }
-
-          const rgbColor = [
-            Math.round(stroke.color.r * 255),
-            Math.round(stroke.color.g * 255),
-            Math.round(stroke.color.b * 255)
-          ];
-
-          if (
-            rgbColor[0] === rgbCurrentColor[0] &&
-            rgbColor[1] === rgbCurrentColor[1] &&
-            rgbColor[2] === rgbCurrentColor[2]
-          ) {
-            stroke.color.r = parseInt(newColor.slice(1, 3), 16) / 255;
-            stroke.color.g = parseInt(newColor.slice(3, 5), 16) / 255;
-            stroke.color.b = parseInt(newColor.slice(5, 7), 16) / 255;
-          }
-        });
-
-        node.strokes = strokes as Paint[];
-      }
-    }
+    figma.ui.postMessage({
+      type: 'replacedColors',
+      itemsUpdated: updatedNodes
+    });
   });
 };
 
@@ -117,15 +178,27 @@ if (figma.editorType === 'figma') {
   figma.showUI(__html__);
 
   figma.on('selectionchange', () => {
-    // TODO: Handle more shapes and types
+    /**
+     * If there's only one item selected and it can't have fills (or strokes since strokes expand
+     * on the types that don't support fills), then don't show send a message and change the UI.
+     */
     if (
-      figma.currentPage.selection.length >= 1 &&
-      figma.currentPage.selection[0].type === 'RECTANGLE'
+      figma.currentPage.selection.length === 1 &&
+      !canHaveFill(figma.currentPage.selection[0])
     ) {
+      return;
+    }
+
+    if (figma.currentPage.selection.length >= 1) {
       // Get the fill colors and convert them to hex
       const colors = new Set();
 
       figma.currentPage.selection.forEach((selection: any) => {
+        // Don't attempt to show colors for nodes that can't have fills
+        if (!canHaveFill(selection)) {
+          return;
+        }
+
         const fills = clone(selection.fills);
         if (fills) {
           fills.forEach((fill: any) => {
@@ -135,6 +208,11 @@ if (figma.editorType === 'figma') {
                 .hex()
             );
           });
+        }
+
+        // Don't attempt to show colors for nodes that can't have strokes
+        if (!canHaveStroke(selection)) {
+          return;
         }
 
         const strokes = clone(selection.strokes);

@@ -3,29 +3,113 @@ import * as ReactDOM from 'react-dom';
 import { ColorSelector } from './ColorSelector';
 import { NewColorPicker } from './NewColorPicker';
 
-const App = () => {
-  const [selected, setSelected] = React.useState<null | {
-    colors: string[];
-  }>(null);
-  const [selectedColorToChange, setSelectedColorToChange] = React.useState<
-    string | undefined
-  >(undefined);
-  const [newColor, setNewColor] = React.useState<string | undefined>(undefined);
+enum PluginState {
+  IDLE,
+  SELECTING,
+  DONE
+}
 
-  console.log(!selectedColorToChange || !newColor);
+type State = {
+  pluginState: PluginState;
+  selected: { colors: string[] };
+  newColor: undefined | string;
+  selectedColorsToChange: string[];
+  itemsUpdated: null | number;
+};
 
-  onmessage = (event) => {
-    if (event.data.pluginMessage.type !== 'selection') {
-      setSelected(null);
-      return;
+type Action =
+  | { pluginState: PluginState.IDLE }
+  | {
+      pluginState: PluginState.SELECTING;
+      selected?: { colors: string[] };
+      newColor?: string;
+      selectedColorsToChange?: string[];
     }
+  | { pluginState: PluginState.DONE; itemsUpdated: number };
 
-    setSelected(event.data.pluginMessage);
-    setSelectedColorToChange(event.data.pluginMessage.colors[0]);
+function appStateReducer(state: State, action: Action): State {
+  if (action.pluginState === PluginState.IDLE) {
+    return {
+      ...state,
+      pluginState: action.pluginState,
+      selected: { colors: [] },
+      newColor: undefined,
+      selectedColorsToChange: []
+    };
+  }
+
+  if (action.pluginState === PluginState.SELECTING) {
+    return {
+      ...state,
+      pluginState: action.pluginState,
+      selected: action.selected ?? state.selected,
+      newColor: action.newColor ?? state.newColor,
+      selectedColorsToChange:
+        action.selectedColorsToChange ?? state.selectedColorsToChange
+    };
+  }
+
+  if (action.pluginState === PluginState.DONE) {
+    return {
+      ...state,
+      pluginState: action.pluginState,
+      itemsUpdated: action.itemsUpdated,
+      selected: { colors: [] },
+      newColor: undefined,
+      selectedColorsToChange: []
+    };
+  }
+
+  return state;
+}
+
+const App = () => {
+  const [
+    { pluginState, selected, newColor, selectedColorsToChange, itemsUpdated },
+    dispatch
+  ] = React.useReducer(appStateReducer, {
+    pluginState: PluginState.IDLE,
+    selected: { colors: [] },
+    newColor: undefined,
+    selectedColorsToChange: [],
+    itemsUpdated: null
+  });
+
+  const updateSelectedColors = (color: string) => {
+    dispatch({
+      pluginState: PluginState.SELECTING,
+      selectedColorsToChange: selectedColorsToChange.includes(color)
+        ? selectedColorsToChange.filter((c) => c !== color)
+        : [...selectedColorsToChange, color]
+    });
   };
 
+  // Handle messages from the plugin code
+  onmessage = (event) => {
+    const { type } = event.data.pluginMessage;
+
+    switch (type) {
+      case 'selection':
+        dispatch({
+          pluginState: PluginState.SELECTING,
+          selected: event.data.pluginMessage
+        });
+        break;
+      case 'replacedColors':
+        dispatch({
+          pluginState: PluginState.DONE,
+          itemsUpdated: event.data.pluginMessage.itemsUpdated
+        });
+        break;
+      default:
+        dispatch({ pluginState: PluginState.IDLE });
+        break;
+    }
+  };
+
+  // Post a message to the plugin code to start the color replacement process
   const replaceColor = () => {
-    if (!selectedColorToChange || !newColor) {
+    if (selectedColorsToChange.length === 0 || !newColor) {
       return;
     }
 
@@ -33,7 +117,7 @@ const App = () => {
       {
         pluginMessage: {
           type: 'replace-color',
-          colorToReplace: selectedColorToChange,
+          colorToReplace: selectedColorsToChange,
           newColor
         }
       },
@@ -43,23 +127,47 @@ const App = () => {
 
   return (
     <div>
-      {!selected && (
+      {pluginState === PluginState.IDLE && (
         <p>
-          <strong>To start, select at least one item on the canvas.</strong>
+          <strong>
+            To start, select items on the page with the color you'd like to
+            change.
+          </strong>
         </p>
       )}
-      {selected && (
+      {pluginState === PluginState.SELECTING && (
         <>
           <ColorSelector
             selected={selected}
-            selectedColorToChange={selectedColorToChange}
-            setSelectedColorToChange={setSelectedColorToChange}
+            selectedColorsToChange={selectedColorsToChange}
+            setSelectedColorsToChange={updateSelectedColors}
           />
-          <NewColorPicker setNewColor={setNewColor} />
+          <NewColorPicker
+            newColor={newColor}
+            setNewColor={(color: string) =>
+              dispatch({
+                pluginState: PluginState.SELECTING,
+                newColor: color
+              })
+            }
+          />
           <button
-            disabled={!selectedColorToChange || !newColor}
+            disabled={selectedColorsToChange.length === 0 || !newColor}
             onClick={replaceColor}>
             Replace Color
+          </button>
+        </>
+      )}
+      {pluginState === PluginState.DONE && (
+        <>
+          <p>
+            <strong>
+              Colors replaced! There were {itemsUpdated} items updated on the
+              page.
+            </strong>
+          </p>
+          <button onClick={() => dispatch({ pluginState: PluginState.IDLE })}>
+            Start over
           </button>
         </>
       )}
