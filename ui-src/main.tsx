@@ -65,6 +65,27 @@ function appStateReducer(state: State, action: Action): State {
   return state;
 }
 
+// Post a message to the plugin code to start the color replacement process
+const replaceColor = (
+  selectedColorsToChange: string[],
+  newColor: string | undefined
+) => {
+  if (selectedColorsToChange.length === 0 || !newColor) {
+    return;
+  }
+
+  parent.postMessage(
+    {
+      pluginMessage: {
+        type: 'replaceColor',
+        colorToReplace: selectedColorsToChange,
+        newColor
+      }
+    },
+    '*'
+  );
+};
+
 const App = () => {
   const [
     { pluginState, selected, newColor, selectedColorsToChange, itemsUpdated },
@@ -102,29 +123,22 @@ const App = () => {
           pluginState: PluginState.DONE,
           itemsUpdated: event.data.pluginMessage.itemsUpdated
         });
+
+        // Deselect the items on the page
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: 'deselectItems'
+            }
+          },
+          '*'
+        );
+
         break;
       default:
         dispatch({ pluginState: PluginState.IDLE });
         break;
     }
-  };
-
-  // Post a message to the plugin code to start the color replacement process
-  const replaceColor = () => {
-    if (selectedColorsToChange.length === 0 || !newColor) {
-      return;
-    }
-
-    parent.postMessage(
-      {
-        pluginMessage: {
-          type: 'replace-color',
-          colorToReplace: selectedColorsToChange,
-          newColor
-        }
-      },
-      '*'
-    );
   };
 
   const getNumberItemsUpdatedString = () => {
@@ -150,6 +164,9 @@ const App = () => {
       )}
       {pluginState === PluginState.SELECTING && (
         <>
+          <p>
+            <em>Colors will be updated only on the current page.</em>
+          </p>
           <ColorSelector
             selected={selected}
             selectedColorsToChange={selectedColorsToChange}
@@ -166,7 +183,7 @@ const App = () => {
           />
           <button
             disabled={selectedColorsToChange.length === 0 || !newColor}
-            onClick={replaceColor}>
+            onClick={() => replaceColor(selectedColorsToChange, newColor)}>
             Replace Color
           </button>
         </>

@@ -1,5 +1,9 @@
 import colorsea from 'colorsea';
 
+type Mutable<T> = {
+  -readonly [P in keyof T]: T[P];
+};
+
 const canHaveFill = (
   node: SceneNode
 ): node is
@@ -174,67 +178,53 @@ const replaceColor = (colors: string[], newColor: string) => {
   });
 };
 
-if (figma.editorType === 'figma') {
-  figma.showUI(__html__);
+const getSelectedColors = () => {
+  // Get the fill colors, convert them to hex,
+  // and add them to a set to remove duplicates
+  const colors = new Set<string>();
 
-  figma.on('selectionchange', () => {
-    /**
-     * If there's only one item selected and it can't have fills (or strokes since strokes expand
-     * on the types that don't support fills), then don't show send a message and change the UI.
-     */
-    if (
-      figma.currentPage.selection.length === 1 &&
-      !canHaveFill(figma.currentPage.selection[0])
-    ) {
+  const colorsInSelection = figma.getSelectionColors();
+
+  if (!colorsInSelection || colorsInSelection.paints.length === 0) {
+    return;
+  }
+
+  colorsInSelection.paints.forEach((color: Paint) => {
+    if (color.type !== 'SOLID') {
       return;
     }
 
+    colors.add(
+      colorsea
+        .rgb(color.color.r * 255, color.color.g * 255, color.color.b * 255)
+        .hex()
+    );
+  });
+
+  return colors;
+};
+
+const getColorsAndPostToUi = () => {
+  const colors = getSelectedColors();
+
+  if (!colors) {
+    return;
+  }
+
+  figma.ui.postMessage({
+    type: 'selection',
+    colors: Array.from(colors)
+  });
+};
+
+if (figma.editorType === 'figma') {
+  figma.on('run', () => {
+    getColorsAndPostToUi();
+  });
+
+  figma.on('selectionchange', () => {
     if (figma.currentPage.selection.length >= 1) {
-      // Get the fill colors and convert them to hex
-      const colors = new Set();
-
-      figma.currentPage.selection.forEach((selection: any) => {
-        // Don't attempt to show colors for nodes that can't have fills
-        if (!canHaveFill(selection)) {
-          return;
-        }
-
-        const fills = clone(selection.fills);
-        if (fills) {
-          fills.forEach((fill: any) => {
-            colors.add(
-              colorsea
-                .rgb(fill.color.r * 255, fill.color.g * 255, fill.color.b * 255)
-                .hex()
-            );
-          });
-        }
-
-        // Don't attempt to show colors for nodes that can't have strokes
-        if (!canHaveStroke(selection)) {
-          return;
-        }
-
-        const strokes = clone(selection.strokes);
-        if (strokes) {
-          strokes.forEach((stroke: any) => {
-            colors.add(
-              colorsea
-                .rgb(
-                  stroke.color.r * 255,
-                  stroke.color.g * 255,
-                  stroke.color.b * 255
-                )
-                .hex()
-            );
-          });
-        }
-      });
-
-      figma.ui.postMessage({
-        type: 'selection',
-        colors: Array.from(colors)
-      });
+      getColorsAndPostToUi();
     } else {
       figma.ui.postMessage({
         type: 'deselection'
@@ -243,7 +233,14 @@ if (figma.editorType === 'figma') {
   });
 
   figma.ui.onmessage = (message) => {
-    console.log('got this from the UI', message);
-    replaceColor(message.colorToReplace, message.newColor);
+    if (message.type === 'replaceColor') {
+      return replaceColor(message.colorToReplace, message.newColor);
+    }
+
+    if (message.type === 'deselectItems') {
+      return (figma.currentPage.selection = []);
+    }
   };
+
+  figma.showUI(__html__, { width: 325, height: 220 });
 }
