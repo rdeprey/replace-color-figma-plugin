@@ -1,10 +1,11 @@
 import * as React from 'react';
-import { ColorPanel } from './ColorPanel/ColorPanel';
+import { ColorPanel, OnChangeFunction } from './ColorPanel/ColorPanel';
+import { Selected } from './main';
 
 type ColorSelectorProps = {
-  selected: null | { colors: string[] };
-  selectedColorsToChange: string[];
-  setSelectedColorsToChange: (color: string) => void;
+  selected: null | Selected;
+  selectedColorsToChange: (string | RGBA)[];
+  setSelectedColorsToChange: OnChangeFunction;
 };
 
 export const ColorSelector = ({
@@ -19,7 +20,7 @@ export const ColorSelector = ({
   return (
     <div className='select-container'>
       <ColorPanel
-        options={selected.colors}
+        options={selected}
         value={selectedColorsToChange ?? ''}
         onChange={setSelectedColorsToChange}
         label='Select color(s) to change: '

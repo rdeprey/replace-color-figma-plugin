@@ -1,70 +1,54 @@
 import * as React from 'react';
 import styles from './ColorPanel.module.css';
+import { Selected } from '../main';
+import { ColorList } from '../ColorList/ColorList';
 
-type OnChangeFunction = (value: string) => void;
+export type OnChangeFunction = (value: string | RGBA) => void;
 
 interface ColorPanelProps {
-  options: string[];
-  value: string[];
+  options: Selected;
+  value: (string | RGBA)[];
   label: string;
   onChange: OnChangeFunction;
   namespace?: string;
 }
 
-const select = (value?: string, onChange?: OnChangeFunction) => {
-  if (value) {
-    onChange && onChange(value);
-  }
-};
-
 export const ColorPanel = ({
   options,
   value,
   label,
-  onChange,
-  namespace = 'default'
+  onChange
 }: ColorPanelProps) => {
   return (
     <div className={styles.colorPanel}>
       <fieldset>
         <legend>{label}</legend>
-        <ul
-          role='listbox'
-          id={`${namespace}_color_selector`}
-          aria-activedescendant={`${namespace}_element_${value}`}
-          tabIndex={-1}>
-          {options.map((option) => {
-            return (
-              <li
-                key={option}
-                id={`${namespace}_element_${option}`}
-                aria-selected={value.includes(option)}
-                role='option'>
-                <label>
-                  <input
-                    type='checkbox'
-                    checked={value.includes(option)}
-                    value={option}
-                    name={`${namespace}_color_to_change`}
-                    className={value.includes(option) ? 'checked' : undefined}
-                    onChange={() => select(option, onChange)}
-                    onKeyDown={(event) => {
-                      if (event.key === ' ' || event.key === 'Enter') {
-                        select(option, onChange);
-                      }
-                    }}
-                  />
-                  <div aria-hidden={true} className={styles.selectionIndicator}>
-                    <div
-                      className={styles.colorSwatch}
-                      style={{ backgroundColor: option }}></div>
-                  </div>
-                  <span className='visuallyHidden'>Select color {option}</span>
-                </label>
-              </li>
-            );
-          })}
-        </ul>
+        {options.colors.solids.length > 0 && (
+          <>
+            <h2>Solid Colors</h2>
+            <ColorList
+              options={options.colors.solids}
+              value={value}
+              onChange={onChange}
+              namespace='solids'
+            />
+          </>
+        )}
+        {options.colors.gradients.length > 0 && (
+          <>
+            <h2>Gradient Colors</h2>
+            <ColorList
+              options={options.colors.gradients}
+              // .map((gradient) => {
+              //   return gradient.map((g) => g.color);
+              // })
+              // .flat()}
+              value={value}
+              onChange={onChange}
+              namespace='gradients'
+            />
+          </>
+        )}
       </fieldset>
     </div>
   );

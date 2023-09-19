@@ -69,6 +69,14 @@ const canHaveStroke = (
   return false;
 };
 
+const isNotGradientPaint = (paint: Paint): paint is SolidPaint => {
+  return paint.type !== 'GRADIENT_LINEAR' && paint.type !== 'GRADIENT_RADIAL';
+};
+
+const isGradientPaint = (paint: Paint): paint is GradientPaint => {
+  return paint.type === 'GRADIENT_LINEAR' || paint.type === 'GRADIENT_RADIAL';
+};
+
 function clone(val: any): { [key: string]: any } | null {
   const type = typeof val;
   if (val === null) {
@@ -178,6 +186,12 @@ if (figma.editorType === 'figma') {
   figma.showUI(__html__);
 
   figma.on('selectionchange', () => {
+    if (
+      figma.currentPage.selection.length >= 1 &&
+      canHaveFill(figma.currentPage.selection[0])
+    ) {
+      console.log('selection changed', figma.currentPage.selection[0].fills);
+    }
     /**
      * If there's only one item selected and it can't have fills (or strokes since strokes expand
      * on the types that don't support fills), then don't show send a message and change the UI.
@@ -191,49 +205,65 @@ if (figma.editorType === 'figma') {
 
     if (figma.currentPage.selection.length >= 1) {
       // Get the fill colors and convert them to hex
-      const colors = new Set();
+      const colors = {
+        solids: new Set<string>(),
+        gradients: new Set<GradientPaint>()
+      };
 
       figma.currentPage.selection.forEach((selection: any) => {
         // Don't attempt to show colors for nodes that can't have fills
-        if (!canHaveFill(selection)) {
-          return;
-        }
-
-        const fills = clone(selection.fills);
-        if (fills) {
-          fills.forEach((fill: any) => {
-            colors.add(
-              colorsea
-                .rgb(fill.color.r * 255, fill.color.g * 255, fill.color.b * 255)
-                .hex()
-            );
-          });
+        if (canHaveFill(selection)) {
+          const fills = clone(selection.fills) as Paint[];
+          if (fills) {
+            fills.forEach((fill) => {
+              if (isNotGradientPaint(fill)) {
+                colors.solids.add(
+                  colorsea
+                    .rgb(
+                      fill.color.r * 255,
+                      fill.color.g * 255,
+                      fill.color.b * 255
+                    )
+                    .hex()
+                );
+              } else if (isGradientPaint(fill)) {
+                colors.gradients.add(fill);
+              }
+            });
+          }
         }
 
         // Don't attempt to show colors for nodes that can't have strokes
-        if (!canHaveStroke(selection)) {
-          return;
+        if (canHaveStroke(selection)) {
+          const strokes = clone(selection.strokes) as Paint[];
+          if (strokes) {
+            strokes.forEach((stroke: Paint) => {
+              if (isNotGradientPaint(stroke)) {
+                colors.solids.add(
+                  colorsea
+                    .rgb(
+                      stroke.color.r * 255,
+                      stroke.color.g * 255,
+                      stroke.color.b * 255
+                    )
+                    .hex()
+                );
+              } else if (isGradientPaint(stroke)) {
+                colors.gradients.add(stroke);
+              }
+            });
+          }
         }
 
-        const strokes = clone(selection.strokes);
-        if (strokes) {
-          strokes.forEach((stroke: any) => {
-            colors.add(
-              colorsea
-                .rgb(
-                  stroke.color.r * 255,
-                  stroke.color.g * 255,
-                  stroke.color.b * 255
-                )
-                .hex()
-            );
-          });
-        }
-      });
-
-      figma.ui.postMessage({
-        type: 'selection',
-        colors: Array.from(colors)
+        figma.ui.postMessage({
+          type: 'selection',
+          colors: {
+            colors: {
+              solids: Array.from(colors.solids),
+              gradients: Array.from(colors.gradients)
+            }
+          }
+        });
       });
     } else {
       figma.ui.postMessage({

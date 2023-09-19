@@ -9,11 +9,18 @@ enum PluginState {
   DONE
 }
 
+export type Selected = {
+  colors: {
+    solids: string[];
+    gradients: GradientPaint[];
+  };
+};
+
 type State = {
   pluginState: PluginState;
-  selected: { colors: string[] };
+  selected: null | Selected;
   newColor: undefined | string;
-  selectedColorsToChange: string[];
+  selectedColorsToChange: (string | RGBA)[];
   itemsUpdated: null | number;
 };
 
@@ -21,18 +28,22 @@ type Action =
   | { pluginState: PluginState.IDLE }
   | {
       pluginState: PluginState.SELECTING;
-      selected?: { colors: string[] };
+      selected?: Selected;
       newColor?: string;
-      selectedColorsToChange?: string[];
+      selectedColorsToChange?: (string | RGBA)[];
     }
   | { pluginState: PluginState.DONE; itemsUpdated: number };
+
+export const isRGBA = (color: string | RGBA): color is RGBA => {
+  return typeof color === 'object';
+};
 
 function appStateReducer(state: State, action: Action): State {
   if (action.pluginState === PluginState.IDLE) {
     return {
       ...state,
       pluginState: action.pluginState,
-      selected: { colors: [] },
+      selected: { colors: { solids: [], gradients: [] } },
       newColor: undefined,
       selectedColorsToChange: []
     };
@@ -54,7 +65,7 @@ function appStateReducer(state: State, action: Action): State {
       ...state,
       pluginState: action.pluginState,
       itemsUpdated: action.itemsUpdated,
-      selected: { colors: [] },
+      selected: { colors: { solids: [], gradients: [] } },
       newColor: undefined,
       selectedColorsToChange: []
     };
@@ -69,13 +80,13 @@ const App = () => {
     dispatch
   ] = React.useReducer(appStateReducer, {
     pluginState: PluginState.IDLE,
-    selected: { colors: [] },
+    selected: { colors: { solids: [], gradients: [] } },
     newColor: undefined,
     selectedColorsToChange: [],
     itemsUpdated: null
   });
 
-  const updateSelectedColors = (color: string) => {
+  const updateSelectedColors = (color: string | RGBA) => {
     dispatch({
       pluginState: PluginState.SELECTING,
       selectedColorsToChange: selectedColorsToChange.includes(color)
@@ -90,9 +101,10 @@ const App = () => {
 
     switch (type) {
       case 'selection':
+        console.log('selection', event.data.pluginMessage.colors);
         dispatch({
           pluginState: PluginState.SELECTING,
-          selected: event.data.pluginMessage
+          selected: event.data.pluginMessage.colors
         });
         break;
       case 'replacedColors':
