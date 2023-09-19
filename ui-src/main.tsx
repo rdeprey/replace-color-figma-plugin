@@ -2,6 +2,8 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { ColorSelector } from './ColorSelector';
 import { NewColorPicker } from './NewColorPicker';
+import selectAnImageGifUrl from './images/select-an-item.gif';
+import styles from './main.module.css';
 
 enum PluginState {
   IDLE,
@@ -14,7 +16,7 @@ type State = {
   selected: { colors: string[] };
   newColor: undefined | string;
   selectedColorsToChange: string[];
-  itemsUpdated: null | number;
+  itemsUpdated: number;
 };
 
 type Action =
@@ -72,7 +74,7 @@ const App = () => {
     selected: { colors: [] },
     newColor: undefined,
     selectedColorsToChange: [],
-    itemsUpdated: null
+    itemsUpdated: 0
   });
 
   const updateSelectedColors = (color: string) => {
@@ -125,15 +127,26 @@ const App = () => {
     );
   };
 
+  const getNumberItemsUpdatedString = () => {
+    if (itemsUpdated === 1) {
+      return 'was 1 item';
+    }
+
+    return `were ${itemsUpdated} items`;
+  };
+
   return (
-    <div>
+    <div className={styles.wrapper}>
       {pluginState === PluginState.IDLE && (
-        <p>
-          <strong>
-            To start, select items on the page with the color you'd like to
-            change.
-          </strong>
-        </p>
+        <>
+          <p>
+            <strong>
+              To start, select items on the page with the color(s) you'd like to
+              change.
+            </strong>
+          </p>
+          <img style={{ width: '100%' }} src={selectAnImageGifUrl} alt='' />
+        </>
       )}
       {pluginState === PluginState.SELECTING && (
         <>
@@ -162,8 +175,8 @@ const App = () => {
         <>
           <p>
             <strong>
-              Colors replaced! There were {itemsUpdated} items updated on the
-              page.
+              Colors replaced! There {getNumberItemsUpdatedString()} updated on
+              the page.
             </strong>
           </p>
           <button onClick={() => dispatch({ pluginState: PluginState.IDLE })}>
