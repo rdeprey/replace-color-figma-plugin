@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ColorPanel } from './ColorPanel/ColorPanel';
+import { ColorPanel } from '../ColorPanel/ColorPanel';
 
 type ColorSelectorProps = {
   selected: null | { colors: string[] };
@@ -15,6 +15,12 @@ export const ColorSelector = ({
   if (!selected || !selected.colors) {
     return null;
   }
+
+  React.useEffect(() => {
+    if (selectedColorsToChange.length === 0 && selected.colors.length === 1) {
+      setSelectedColorsToChange(selected.colors[0]);
+    }
+  }, [selectedColorsToChange]);
 
   return (
     <div className='select-container'>

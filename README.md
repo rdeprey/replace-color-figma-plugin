@@ -2,6 +2,10 @@
 
 A Figma plugin to replace selected colors on a page
 
+<video width="800" height="400" controls muted="true">
+  <source src="app-data/videos/demo.mp4" type="video/mp4">
+</video>
+
 ## Features
 
 This plugin can be used to:

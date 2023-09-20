@@ -1,8 +1,5 @@
 import colorsea from 'colorsea';
-
-type Mutable<T> = {
-  -readonly [P in keyof T]: T[P];
-};
+import { clone } from './utils';
 
 const canHaveFill = (
   node: SceneNode
@@ -73,40 +70,21 @@ const canHaveStroke = (
   return false;
 };
 
-function clone(val: any): { [key: string]: any } | null {
-  const type = typeof val;
-  if (val === null) {
-    return null;
-  } else if (
-    type === 'undefined' ||
-    type === 'number' ||
-    type === 'string' ||
-    type === 'boolean'
-  ) {
-    return val;
-  } else if (type === 'object') {
-    if (val instanceof Array) {
-      return val.map((x) => clone(x));
-    } else if (val instanceof Uint8Array) {
-      return new Uint8Array(val);
-    } else {
-      let o: { [key: string]: any } = {};
-      for (const key in val) {
-        o[key] = clone(val[key]);
-      }
-      return o;
-    }
-  }
-  throw 'unknown';
-}
-
 const replaceColor = (colors: string[], newColor: string) => {
+  const updatedNodes = new Set();
+
   colors.forEach((color) => {
     const rgbCurrentColor = colorsea(`${color}`).rgb();
 
-    let updatedNodes = 0;
     figma.currentPage.children.forEach((node: SceneNode) => {
-      if (canHaveFill(node)) {
+      const supportsFills = canHaveFill(node);
+      const supportsStrokes = canHaveStroke(node);
+
+      if (!supportsFills && !supportsStrokes) {
+        return;
+      }
+
+      if (supportsFills) {
         const fills = clone(node.fills);
 
         if (fills) {
@@ -130,7 +108,7 @@ const replaceColor = (colors: string[], newColor: string) => {
               fill.color.g = parseInt(newColor.slice(3, 5), 16) / 255;
               fill.color.b = parseInt(newColor.slice(5, 7), 16) / 255;
 
-              updatedNodes++;
+              updatedNodes.add(node.id);
             }
           });
 
@@ -138,7 +116,7 @@ const replaceColor = (colors: string[], newColor: string) => {
         }
       }
 
-      if (canHaveStroke(node)) {
+      if (supportsStrokes) {
         const strokes = clone(node.strokes);
 
         if (strokes) {
@@ -162,7 +140,7 @@ const replaceColor = (colors: string[], newColor: string) => {
               stroke.color.g = parseInt(newColor.slice(3, 5), 16) / 255;
               stroke.color.b = parseInt(newColor.slice(5, 7), 16) / 255;
 
-              updatedNodes++;
+              updatedNodes.add(node.id);
             }
           });
 
@@ -173,7 +151,7 @@ const replaceColor = (colors: string[], newColor: string) => {
 
     figma.ui.postMessage({
       type: 'replacedColors',
-      itemsUpdated: updatedNodes
+      itemsUpdated: updatedNodes.size
     });
   });
 };

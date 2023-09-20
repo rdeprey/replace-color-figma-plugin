@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { ColorSelector } from './ColorSelector';
-import { NewColorPicker } from './NewColorPicker';
+import { ColorSelector } from './ColorSelector/ColorSelector';
+import { NewColorPicker } from './NewColorPicker/NewColorPicker';
 import selectAnImageGifUrl from './images/select-an-item.gif';
 import styles from './main.module.css';
 
@@ -123,22 +123,24 @@ const App = () => {
           pluginState: PluginState.DONE,
           itemsUpdated: event.data.pluginMessage.itemsUpdated
         });
-
-        // Deselect the items on the page
-        parent.postMessage(
-          {
-            pluginMessage: {
-              type: 'deselectItems'
-            }
-          },
-          '*'
-        );
-
         break;
       default:
         dispatch({ pluginState: PluginState.IDLE });
         break;
     }
+  };
+
+  const handleRestart = () => {
+    // Deselect the items on the page
+    parent.postMessage(
+      {
+        pluginMessage: {
+          type: 'deselectItems'
+        }
+      },
+      '*'
+    );
+    dispatch({ pluginState: PluginState.IDLE });
   };
 
   const getNumberItemsUpdatedString = () => {
@@ -196,9 +198,7 @@ const App = () => {
               the page.
             </strong>
           </p>
-          <button onClick={() => dispatch({ pluginState: PluginState.IDLE })}>
-            Start over
-          </button>
+          <button onClick={handleRestart}>Start over</button>
         </>
       )}
     </div>
