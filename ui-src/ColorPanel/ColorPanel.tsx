@@ -1,54 +1,75 @@
 import * as React from 'react';
 import styles from './ColorPanel.module.css';
-import { Selected } from '../main';
-import { ColorList } from '../ColorList/ColorList';
 
-export type OnChangeFunction = (value: string | RGBA) => void;
+type OnChangeFunction = (value: string) => void;
 
 interface ColorPanelProps {
-  options: Selected;
-  value: (string | RGBA)[];
+  options: string[];
+  value: string[];
   label: string;
   onChange: OnChangeFunction;
   namespace?: string;
 }
 
+const select = (value?: string, onChange?: OnChangeFunction) => {
+  if (value) {
+    onChange && onChange(value);
+  }
+};
+
 export const ColorPanel = ({
   options,
   value,
   label,
-  onChange
+  onChange,
+  namespace = 'default'
 }: ColorPanelProps) => {
   return (
     <div className={styles.colorPanel}>
       <fieldset>
         <legend>{label}</legend>
-        {options.colors.solids.length > 0 && (
-          <>
-            <h2>Solid Colors</h2>
-            <ColorList
-              options={options.colors.solids}
-              value={value}
-              onChange={onChange}
-              namespace='solids'
-            />
-          </>
-        )}
-        {options.colors.gradients.length > 0 && (
-          <>
-            <h2>Gradient Colors</h2>
-            <ColorList
-              options={options.colors.gradients}
-              // .map((gradient) => {
-              //   return gradient.map((g) => g.color);
-              // })
-              // .flat()}
-              value={value}
-              onChange={onChange}
-              namespace='gradients'
-            />
-          </>
-        )}
+        <ul
+          role='listbox'
+          id={`${namespace}_color_selector`}
+          aria-activedescendant={`${namespace}_element_${value}`}
+          tabIndex={-1}>
+          {options.map((option) => {
+            return (
+              <li
+                key={option}
+                id={`${namespace}_element_${option}`}
+                aria-selected={value.includes(option)}
+                role='option'>
+                <label>
+                  <input
+                    type='checkbox'
+                    checked={value.includes(option)}
+                    value={option}
+                    name={`${namespace}_color_to_change`}
+                    className={value.includes(option) ? 'checked' : undefined}
+                    onChange={() => select(option, onChange)}
+                    onKeyDown={(event) => {
+                      if (event.key === ' ' || event.key === 'Enter') {
+                        select(option, onChange);
+                      }
+                    }}
+                  />
+                  <div aria-hidden={true} className={styles.selectionIndicator}>
+                    <div
+                      className={styles.colorSwatch}
+                      style={{ backgroundColor: option }}></div>
+                  </div>
+                  <span
+                    aria-hidden={true}
+                    tabIndex={-1}
+                    className='visuallyHidden'>
+                    {`Color hex code: ${option}`}
+                  </span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
       </fieldset>
     </div>
   );

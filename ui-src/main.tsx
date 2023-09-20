@@ -1,49 +1,45 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { ColorSelector } from './ColorSelector';
-import { NewColorPicker } from './NewColorPicker';
+import { ColorSelector } from './ColorSelector/ColorSelector';
+import { NewColorPicker } from './NewColorPicker/NewColorPicker';
+import { LoadingIndicator } from './LoadingIndicator/LoadingIndicator';
+import selectAnImageGifUrl from './images/select-an-item.gif';
+import styles from './main.module.css';
 
 enum PluginState {
   IDLE,
   SELECTING,
+  REPLACING,
   DONE
 }
 
-export type Selected = {
-  colors: {
-    solids: string[];
-    gradients: GradientPaint[];
-  };
-};
-
 type State = {
   pluginState: PluginState;
-  selected: null | Selected;
+  selected: { colors: string[] };
   newColor: undefined | string;
-  selectedColorsToChange: (string | RGBA)[];
-  itemsUpdated: null | number;
+  selectedColorsToChange: string[];
+  itemsUpdated: number;
 };
 
 type Action =
   | { pluginState: PluginState.IDLE }
   | {
       pluginState: PluginState.SELECTING;
-      selected?: Selected;
+      selected?: { colors: string[] };
       newColor?: string;
-      selectedColorsToChange?: (string | RGBA)[];
+      selectedColorsToChange?: string[];
+    }
+  | {
+      pluginState: PluginState.REPLACING;
     }
   | { pluginState: PluginState.DONE; itemsUpdated: number };
-
-export const isRGBA = (color: string | RGBA): color is RGBA => {
-  return typeof color === 'object';
-};
 
 function appStateReducer(state: State, action: Action): State {
   if (action.pluginState === PluginState.IDLE) {
     return {
       ...state,
       pluginState: action.pluginState,
-      selected: { colors: { solids: [], gradients: [] } },
+      selected: { colors: [] },
       newColor: undefined,
       selectedColorsToChange: []
     };
@@ -60,12 +56,19 @@ function appStateReducer(state: State, action: Action): State {
     };
   }
 
+  if (action.pluginState === PluginState.REPLACING) {
+    return {
+      ...state,
+      pluginState: action.pluginState
+    };
+  }
+
   if (action.pluginState === PluginState.DONE) {
     return {
       ...state,
       pluginState: action.pluginState,
       itemsUpdated: action.itemsUpdated,
-      selected: { colors: { solids: [], gradients: [] } },
+      selected: { colors: [] },
       newColor: undefined,
       selectedColorsToChange: []
     };
@@ -74,19 +77,40 @@ function appStateReducer(state: State, action: Action): State {
   return state;
 }
 
+// Post a message to the plugin code to start the color replacement process
+const replaceColor = (
+  selectedColorsToChange: string[],
+  newColor: string | undefined
+) => {
+  if (selectedColorsToChange.length === 0 || !newColor) {
+    return;
+  }
+
+  parent.postMessage(
+    {
+      pluginMessage: {
+        type: 'replaceColor',
+        colorToReplace: selectedColorsToChange,
+        newColor
+      }
+    },
+    '*'
+  );
+};
+
 const App = () => {
   const [
     { pluginState, selected, newColor, selectedColorsToChange, itemsUpdated },
     dispatch
   ] = React.useReducer(appStateReducer, {
     pluginState: PluginState.IDLE,
-    selected: { colors: { solids: [], gradients: [] } },
+    selected: { colors: [] },
     newColor: undefined,
     selectedColorsToChange: [],
-    itemsUpdated: null
+    itemsUpdated: 0
   });
 
-  const updateSelectedColors = (color: string | RGBA) => {
+  const updateSelectedColors = (color: string) => {
     dispatch({
       pluginState: PluginState.SELECTING,
       selectedColorsToChange: selectedColorsToChange.includes(color)
@@ -101,11 +125,26 @@ const App = () => {
 
     switch (type) {
       case 'selection':
-        console.log('selection', event.data.pluginMessage.colors);
         dispatch({
           pluginState: PluginState.SELECTING,
-          selected: event.data.pluginMessage.colors
+          selected: { colors: event.data.pluginMessage.colors }
         });
+
+        // Let's the plugin know when to render the UI
+        // to prevent a flash of content if there are items
+        // already selected on the page before the plugin loads
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: 'uiReady'
+            }
+          },
+          '*'
+        );
+
+        break;
+      case 'replacingColors':
+        dispatch({ pluginState: PluginState.REPLACING });
         break;
       case 'replacedColors':
         dispatch({
@@ -119,36 +158,45 @@ const App = () => {
     }
   };
 
-  // Post a message to the plugin code to start the color replacement process
-  const replaceColor = () => {
-    if (selectedColorsToChange.length === 0 || !newColor) {
-      return;
-    }
-
+  const handleRestart = () => {
+    // Deselect the items on the page
     parent.postMessage(
       {
         pluginMessage: {
-          type: 'replace-color',
-          colorToReplace: selectedColorsToChange,
-          newColor
+          type: 'deselectItems'
         }
       },
       '*'
     );
+    dispatch({ pluginState: PluginState.IDLE });
+  };
+
+  const getNumberItemsUpdatedString = () => {
+    if (itemsUpdated === 1) {
+      return 'was 1 item';
+    }
+
+    return `were ${itemsUpdated} items`;
   };
 
   return (
-    <div>
+    <div className={styles.wrapper} aria-live='polite'>
       {pluginState === PluginState.IDLE && (
-        <p>
-          <strong>
-            To start, select items on the page with the color you'd like to
-            change.
-          </strong>
-        </p>
+        <>
+          <p>
+            <strong>
+              To start, select items on the page with the color(s) you'd like to
+              change.
+            </strong>
+          </p>
+          <img style={{ width: '100%' }} src={selectAnImageGifUrl} alt='' />
+        </>
       )}
       {pluginState === PluginState.SELECTING && (
         <>
+          <p>
+            <em>Colors will be updated only on the current page.</em>
+          </p>
           <ColorSelector
             selected={selected}
             selectedColorsToChange={selectedColorsToChange}
@@ -165,22 +213,21 @@ const App = () => {
           />
           <button
             disabled={selectedColorsToChange.length === 0 || !newColor}
-            onClick={replaceColor}>
+            onClick={() => replaceColor(selectedColorsToChange, newColor)}>
             Replace Color
           </button>
         </>
       )}
+      {pluginState === PluginState.REPLACING && <LoadingIndicator />}
       {pluginState === PluginState.DONE && (
         <>
           <p>
             <strong>
-              Colors replaced! There were {itemsUpdated} items updated on the
-              page.
+              Colors replaced! There {getNumberItemsUpdatedString()} updated on
+              the page.
             </strong>
           </p>
-          <button onClick={() => dispatch({ pluginState: PluginState.IDLE })}>
-            Start over
-          </button>
+          <button onClick={handleRestart}>Start over</button>
         </>
       )}
     </div>

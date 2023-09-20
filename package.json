@@ -1,7 +1,7 @@
 {
-  "name": "Replace-Color",
+  "name": "figma-replace-color-plugin",
   "version": "1.0.0",
-  "description": "Your Figma Plugin",
+  "description": "A Figma plugin to replace selected colors in a page",
   "main": "dist/code.js",
   "scripts": {
     "tsc": "npm run tsc:main && npm run tsc:ui",
@@ -14,8 +14,8 @@
     "build:watch": "concurrently -n widget,iframe \"npm run build:main -- --watch\" \"npm run build:ui -- --watch\"",
     "dev": "concurrently -n tsc,build,vite 'npm:tsc:watch' 'npm:build:watch' 'vite'"
   },
-  "author": "",
-  "license": "",
+  "author": "Rebecca Deprey",
+  "license": "gpl-3.0",
   "devDependencies": {
     "@figma/plugin-typings": "*",
     "@types/react-dom": "^18.2.7",
