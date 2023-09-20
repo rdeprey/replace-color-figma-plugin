@@ -2,11 +2,11 @@
   "name": "Replace Color",
   "id": "1284187074513252900",
   "api": "1.0.0",
-  "main": "code.js",
-  "ui": "color-selector-ui.html",
+  "main": "dist/code.js",
+  "ui": "dist/index.html",
   "capabilities": [],
   "enableProposedApi": false,
-  "editorType": ["figma", "figjam"],
+  "editorType": ["figma"],
   "networkAccess": {
     "allowedDomains": ["none"]
   }

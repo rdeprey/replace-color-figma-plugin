@@ -1,40 +1,57 @@
-Below are the steps to get your plugin running. You can also find instructions at:
+# Replace Color Figma Plugin
 
-  https://www.figma.com/plugin-docs/plugin-quickstart-guide/
+A Figma plugin to replace selected colors on a page
 
-This plugin template uses Typescript and NPM, two standard tools in creating JavaScript applications.
+<video width="800" height="400" controls muted="true">
+  <source src="app-data/videos/demo.mp4" type="video/mp4">
+</video>
 
-First, download Node.js which comes with NPM. This will allow you to install TypeScript and other
-libraries. You can find the download link here:
+## Features
 
-  https://nodejs.org/en/download/
+This plugin can be used to:
 
-Next, install TypeScript using the command:
+- Select one or more items on a page that support fills and strokes
+- Select one or more colors from the selected items to change
+- Choose a new color and replace the selected colors with it
 
-  npm install -g typescript
+### Supported
 
-Finally, in the directory of your plugin, get the latest type definitions for the plugin API by running:
+- Selection of multiple items to get colors
+- Solid colors used for item fills and strokes
+- The following items that support fills and strokes:
+  - Rectangles
+  - Star
+  - Line
+  - Ellipse
+  - Polygon
+  - Text
+  - Shapes with Text
+  - Vectors
+  - Frames
+  - Sticky Nodes
+  - Stamp Nodes
+  - Highlights
+  - Washi Tape
+  - Tables
+- Updates all items with the matching color(s) on the current page
 
-  npm install --save-dev @figma/plugin-typings
+### Unsupported
 
-If you are familiar with JavaScript, TypeScript will look very familiar. In fact, valid JavaScript code
-is already valid Typescript code.
+- The following items are unsupported:
+  - Components
 
-TypeScript adds type annotations to variables. This allows code editors such as Visual Studio Code
-to provide information about the Figma API while you are writing code, as well as help catch bugs
-you previously didn't notice.
+### Coming Soon
 
-For more information, visit https://www.typescriptlang.org/
+- Support for selecting and replacing gradients in fills and strokes
 
-Using TypeScript requires a compiler to convert TypeScript (code.ts) into JavaScript (code.js)
-for the browser to run.
+## Running the Plugin for Local Development
 
-We recommend writing TypeScript code using Visual Studio code:
+1. Install the local project dependencies by running `npm i` in the root directory
+2. Run `npm run build:watch` to run the plugin in watch mode. The plugin will update every time you save your changes.
+3. In the Figma desktop app:
 
-1. Download Visual Studio Code if you haven't already: https://code.visualstudio.com/.
-2. Open this directory in Visual Studio Code.
-3. Compile TypeScript to JavaScript: Run the "Terminal > Run Build Task..." menu item,
-    then select "npm: watch". You will have to do this again every time
-    you reopen Visual Studio Code.
+- Under the Plugins menu, go to Development > Import plugin from manifest
+- Select the `manifest.json` file for this plugin from your local computer
+- In the Plugin menu that appears, double click on "Replace Color" to launch the plugin
 
-That's it! Visual Studio Code will regenerate the JavaScript file every time you save.
+Further instructions can be found at [https://www.figma.com/plugin-docs/plugin-quickstart-guide/](https://www.figma.com/plugin-docs/plugin-quickstart-guide/).

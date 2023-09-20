@@ -1,0 +1,28 @@
+.newColorPicker {
+  display: flex;
+  flex-direction: column;
+}
+
+.newColorPicker input[type='color'] {
+  margin: 0 0.25rem 0 0;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+input[type='color' i] {
+  inline-size: 1.9rem;
+  block-size: 1.9rem;
+}
+
+.newColorPicker input[type='color']::-webkit-color-swatch {
+  border: 1px solid #232323;
+  border-radius: 50%;
+}
+
+.newColorPicker > div {
+  display: flex;
+  align-items: center;
+  margin-top: 0.25rem;
+}
