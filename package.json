@@ -15,7 +15,7 @@
     "dev": "concurrently -n tsc,build,vite 'npm:tsc:watch' 'npm:build:watch' 'vite'"
   },
   "author": "Rebecca Deprey",
-  "license": "",
+  "license": "gpl-3.0",
   "devDependencies": {
     "@figma/plugin-typings": "*",
     "@types/react-dom": "^18.2.7",
