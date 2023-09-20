@@ -14,7 +14,7 @@ This plugin can be used to:
 
 - Selection of multiple items to get colors
 - Solid colors used for item fills and strokes
-- All items that support fills and strokes:
+- The following items that support fills and strokes:
   - Rectangles
   - Star
   - Line
@@ -30,6 +30,11 @@ This plugin can be used to:
   - Washi Tape
   - Tables
 - Updates all items with the matching color(s) on the current page
+
+### Unsupported
+
+- The following items are unsupported:
+  - Components
 
 ### Coming Soon
 

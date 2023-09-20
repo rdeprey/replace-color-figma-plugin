@@ -207,7 +207,7 @@ const getSelectedColors = () => {
 const getColorsAndPostToUi = () => {
   const colors = getSelectedColors();
 
-  if (!colors) {
+  if (!colors || colors.size === 0) {
     return;
   }
 
