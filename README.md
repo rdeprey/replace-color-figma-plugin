@@ -2,9 +2,7 @@
 
 A Figma plugin to replace selected colors on a page
 
-<video width="800" height="400" controls muted="true">
-  <source src="app-data/videos/demo.mp4" type="video/mp4">
-</video>
+https://github.com/rdeprey/replace-color-figma-plugin/assets/453900/a8d1b0fd-2244-476b-930a-528422c8107c
 
 ## Features
 
