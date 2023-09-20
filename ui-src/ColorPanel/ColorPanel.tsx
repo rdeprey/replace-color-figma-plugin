@@ -59,7 +59,12 @@ export const ColorPanel = ({
                       className={styles.colorSwatch}
                       style={{ backgroundColor: option }}></div>
                   </div>
-                  <span className='visuallyHidden'>Select color {option}</span>
+                  <span
+                    aria-hidden={true}
+                    tabIndex={-1}
+                    className='visuallyHidden'>
+                    {`Color hex code: ${option}`}
+                  </span>
                 </label>
               </li>
             );

@@ -180,7 +180,7 @@ const App = () => {
   };
 
   return (
-    <div className={styles.wrapper}>
+    <div className={styles.wrapper} aria-live='polite'>
       {pluginState === PluginState.IDLE && (
         <>
           <p>
