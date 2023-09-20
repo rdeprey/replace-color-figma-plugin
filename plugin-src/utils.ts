@@ -1,3 +1,72 @@
+export const canHaveFill = (
+  node: SceneNode
+): node is
+  | RectangleNode
+  | FrameNode
+  | BooleanOperationNode
+  | VectorNode
+  | StarNode
+  | LineNode
+  | EllipseNode
+  | PolygonNode
+  | TextNode
+  | StickyNode
+  | ShapeWithTextNode
+  | StampNode
+  | SectionNode
+  | HighlightNode
+  | WashiTapeNode
+  | TableNode => {
+  if (
+    node.type !== 'SLICE' &&
+    node.type !== 'GROUP' &&
+    node.type !== 'CONNECTOR' &&
+    node.type !== 'CODE_BLOCK' &&
+    node.type !== 'WIDGET' &&
+    node.type !== 'INSTANCE' &&
+    node.type !== 'COMPONENT' &&
+    node.type !== 'COMPONENT_SET' &&
+    node.type !== 'EMBED' &&
+    node.type !== 'LINK_UNFURL' &&
+    node.type !== 'MEDIA'
+  ) {
+    return true;
+  }
+
+  return false;
+};
+
+export const canHaveStroke = (
+  node: SceneNode
+): node is
+  | RectangleNode
+  | FrameNode
+  | BooleanOperationNode
+  | VectorNode
+  | StarNode
+  | LineNode
+  | EllipseNode
+  | PolygonNode
+  | TextNode
+  | ShapeWithTextNode
+  | StampNode
+  | HighlightNode
+  | WashiTapeNode => {
+  if (!canHaveFill(node)) {
+    return false;
+  }
+
+  if (
+    node.type !== 'STICKY' &&
+    node.type !== 'SECTION' &&
+    node.type !== 'TABLE'
+  ) {
+    return true;
+  }
+
+  return false;
+};
+
 export function clone(val: any): { [key: string]: any } | null {
   const type = typeof val;
   if (val === null) {

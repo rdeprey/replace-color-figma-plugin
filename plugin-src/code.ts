@@ -1,77 +1,12 @@
 import colorsea from 'colorsea';
-import { clone } from './utils';
+import { clone, canHaveFill, canHaveStroke } from './utils';
 
-const canHaveFill = (
-  node: SceneNode
-): node is
-  | RectangleNode
-  | FrameNode
-  | BooleanOperationNode
-  | VectorNode
-  | StarNode
-  | LineNode
-  | EllipseNode
-  | PolygonNode
-  | TextNode
-  | StickyNode
-  | ShapeWithTextNode
-  | StampNode
-  | SectionNode
-  | HighlightNode
-  | WashiTapeNode
-  | TableNode => {
-  if (
-    node.type !== 'SLICE' &&
-    node.type !== 'GROUP' &&
-    node.type !== 'CONNECTOR' &&
-    node.type !== 'CODE_BLOCK' &&
-    node.type !== 'WIDGET' &&
-    node.type !== 'INSTANCE' &&
-    node.type !== 'COMPONENT' &&
-    node.type !== 'COMPONENT_SET' &&
-    node.type !== 'EMBED' &&
-    node.type !== 'LINK_UNFURL' &&
-    node.type !== 'MEDIA'
-  ) {
-    return true;
-  }
+// Store the notification in the global scope so that it can be referenced
+// in multiple sub-scopes
+let notification: NotificationHandler;
 
-  return false;
-};
-
-const canHaveStroke = (
-  node: SceneNode
-): node is
-  | RectangleNode
-  | FrameNode
-  | BooleanOperationNode
-  | VectorNode
-  | StarNode
-  | LineNode
-  | EllipseNode
-  | PolygonNode
-  | TextNode
-  | ShapeWithTextNode
-  | StampNode
-  | HighlightNode
-  | WashiTapeNode => {
-  if (!canHaveFill(node)) {
-    return false;
-  }
-
-  if (
-    node.type !== 'STICKY' &&
-    node.type !== 'SECTION' &&
-    node.type !== 'TABLE'
-  ) {
-    return true;
-  }
-
-  return false;
-};
-
-const replaceColor = (colors: string[], newColor: string) => {
-  const updatedNodes = new Set();
+const replaceColor = (colors: string[], newColor: string): void => {
+  const updatedNodes = new Set<string>();
 
   colors.forEach((color) => {
     const rgbCurrentColor = colorsea(`${color}`).rgb();
@@ -148,11 +83,11 @@ const replaceColor = (colors: string[], newColor: string) => {
         }
       }
     });
+  });
 
-    figma.ui.postMessage({
-      type: 'replacedColors',
-      itemsUpdated: updatedNodes.size
-    });
+  figma.ui.postMessage({
+    type: 'replacedColors',
+    itemsUpdated: updatedNodes.size
   });
 };
 
@@ -168,6 +103,15 @@ const getSelectedColors = () => {
   }
 
   colorsInSelection.paints.forEach((color: Paint) => {
+    // Let the user know that gradients aren't supported if they're
+    // a part of the user's selection
+    if (color.type.startsWith('GRADIENT')) {
+      notification = figma.notify(
+        `The plugin doesn't currently support gradients.`
+      );
+      return;
+    }
+
     if (color.type !== 'SOLID') {
       return;
     }
@@ -182,7 +126,7 @@ const getSelectedColors = () => {
   return colors;
 };
 
-const getColorsAndPostToUi = () => {
+const getColorsAndPostToUi = (): void | undefined => {
   const colors = getSelectedColors();
 
   if (!colors || colors.size === 0) {
@@ -195,30 +139,55 @@ const getColorsAndPostToUi = () => {
   });
 };
 
-if (figma.editorType === 'figma') {
-  figma.on('run', () => {
-    getColorsAndPostToUi();
-  });
+const main = () => {
+  if (figma.editorType === 'figma') {
+    figma.on('run', () => {
+      // Show initial UI if there aren't any items already selected
+      // when the plugin starts
+      if (figma.currentPage.selection.length === 0) {
+        figma.ui.show();
+      } else {
+        // Otherwise, get the colors from the selected items
+        // and let the UI post a `uiReady` message when it's
+        // ready to show the UI in the SELECTING state
+        getColorsAndPostToUi();
+      }
+    });
 
-  figma.on('selectionchange', () => {
-    if (figma.currentPage.selection.length >= 1) {
-      getColorsAndPostToUi();
-    } else {
-      figma.ui.postMessage({
-        type: 'deselection'
-      });
-    }
-  });
+    figma.on('selectionchange', () => {
+      // If there's a notification displayed, cancel it before updating the colors
+      // displayed from the new item selection or sending a deselection event to
+      // the UI
+      notification && notification.cancel && notification.cancel();
+      if (figma.currentPage.selection.length >= 1) {
+        getColorsAndPostToUi();
+      } else {
+        figma.ui.postMessage({
+          type: 'deselection'
+        });
+      }
+    });
 
-  figma.ui.onmessage = (message) => {
-    if (message.type === 'replaceColor') {
-      return replaceColor(message.colorToReplace, message.newColor);
-    }
+    figma.ui.onmessage = (message) => {
+      if (message.type === 'replaceColor') {
+        figma.ui.postMessage({
+          type: 'replacingColors'
+        });
 
-    if (message.type === 'deselectItems') {
-      return (figma.currentPage.selection = []);
-    }
-  };
+        return replaceColor(message.colorToReplace, message.newColor);
+      }
 
-  figma.showUI(__html__, { width: 325, height: 220 });
-}
+      if (message.type === 'deselectItems') {
+        return (figma.currentPage.selection = []);
+      }
+
+      if (message.type === 'uiReady') {
+        return figma.ui.show();
+      }
+    };
+
+    figma.showUI(__html__, { width: 325, height: 220, visible: false });
+  }
+};
+
+main();

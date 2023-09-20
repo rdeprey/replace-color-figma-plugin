@@ -2,12 +2,14 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { ColorSelector } from './ColorSelector/ColorSelector';
 import { NewColorPicker } from './NewColorPicker/NewColorPicker';
+import { LoadingIndicator } from './LoadingIndicator/LoadingIndicator';
 import selectAnImageGifUrl from './images/select-an-item.gif';
 import styles from './main.module.css';
 
 enum PluginState {
   IDLE,
   SELECTING,
+  REPLACING,
   DONE
 }
 
@@ -26,6 +28,9 @@ type Action =
       selected?: { colors: string[] };
       newColor?: string;
       selectedColorsToChange?: string[];
+    }
+  | {
+      pluginState: PluginState.REPLACING;
     }
   | { pluginState: PluginState.DONE; itemsUpdated: number };
 
@@ -48,6 +53,13 @@ function appStateReducer(state: State, action: Action): State {
       newColor: action.newColor ?? state.newColor,
       selectedColorsToChange:
         action.selectedColorsToChange ?? state.selectedColorsToChange
+    };
+  }
+
+  if (action.pluginState === PluginState.REPLACING) {
+    return {
+      ...state,
+      pluginState: action.pluginState
     };
   }
 
@@ -115,8 +127,24 @@ const App = () => {
       case 'selection':
         dispatch({
           pluginState: PluginState.SELECTING,
-          selected: event.data.pluginMessage
+          selected: { colors: event.data.pluginMessage.colors }
         });
+
+        // Let's the plugin know when to render the UI
+        // to prevent a flash of content if there are items
+        // already selected on the page before the plugin loads
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: 'uiReady'
+            }
+          },
+          '*'
+        );
+
+        break;
+      case 'replacingColors':
+        dispatch({ pluginState: PluginState.REPLACING });
         break;
       case 'replacedColors':
         dispatch({
@@ -190,6 +218,7 @@ const App = () => {
           </button>
         </>
       )}
+      {pluginState === PluginState.REPLACING && <LoadingIndicator />}
       {pluginState === PluginState.DONE && (
         <>
           <p>
